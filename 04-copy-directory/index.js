@@ -18,11 +18,22 @@ async function deleteFolder() {
 async function copyFolder() {
   try {
     const createDir = await fs.mkdir(folder, { recursive: true });
+    const copyDir = async (src, dest) => {
+      const files = await fs.readdir(src);
+      for (const file of files) {
+        const srcPath = path.join(src, file);
+        const destPath = path.join(dest, file);
+        const stats = await fs.stat(srcPath);
+        if (stats.isDirectory()) {
+          await fs.mkdir(destPath, { recursive: true });
+          await copyDir(srcPath, destPath);
+        } else {
+          await fs.copyFile(srcPath, destPath);
+        }
+      }
+    };
+    await copyDir(source, folder);
     console.log(`Done: ${createDir}`);
-    const contents = await fs.readdir(source);
-    for (const file of contents) {
-      await fs.copyFile(path.join(source, file), path.join(folder, file));
-    }
   } catch (err) {
     console.error(err.message);
   }
