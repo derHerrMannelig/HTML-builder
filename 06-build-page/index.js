@@ -47,17 +47,21 @@ async function applyTemplate() {
     let indexData = await fsPromises.readFile(index, 'utf-8');
     const componentsData = await fsPromises.readdir(components);
     const componentsFiles = componentsData.filter(file => {
-      // ТЗ не требует чек на то, является ли компонент папкой, но пусть будет.
-      const filePath = path.join(components, file);
-      const isDirectory = fs.lstatSync(filePath).isDirectory();
-      return !isDirectory && file.endsWith('.html');
+      return file.endsWith('.html');
     });
     for (const file of componentsFiles) {
-      const fileName = file.split('.')[0];
-      const blockName = `{{${fileName}}}`;
+      // Чек на директорию с .html в конце.
       const filePath = path.join(components, file);
-      const fileData = await fsPromises.readFile(filePath, 'utf-8');
-      indexData = indexData.split(blockName).join(`\n${fileData}\n`);
+      const isDirectory = await fsPromises.stat(filePath);
+      if (!isDirectory.isDirectory()) {
+        const fileName = file.split('.')[0];
+        const blockName = `{{${fileName}}}`;
+        const fileData = await fsPromises.readFile(filePath, 'utf-8');
+        indexData = indexData.split(blockName).join(`\n${fileData}\n`);
+        console.log(`Detected component: ${filePath}`);
+      } else {
+        console.log(`This is a directory, not a valid component: ${filePath}`);
+      }
     }
     await fsPromises.writeFile(index, indexData);
     console.log(`Templates (${components}) are applied.`);
